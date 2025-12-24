@@ -26,6 +26,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
 	myrepository "go.uber.org/dig/internal/digreflect/tests/myrepository.git"
 	mypackage "go.uber.org/dig/internal/digreflect/tests/myrepository.git/mypackage"
 )
@@ -41,7 +42,7 @@ func nestedFunctions() (nested1, nested2, nested3 func()) {
 		nested3 = func() {}
 	}
 	nested2() // set nested3
-	return
+	return nested1, nested2, nested3
 }
 
 func TestInspectFunc(t *testing.T) {
@@ -49,7 +50,7 @@ func TestInspectFunc(t *testing.T) {
 
 	tests := []struct {
 		desc        string
-		give        interface{}
+		give        any
 		wantName    string
 		wantPackage string
 

@@ -186,12 +186,12 @@ func (s *Scope) knownTypes() []reflect.Type {
 
 func (s *Scope) getValue(name string, t reflect.Type) (v reflect.Value, ok bool) {
 	v, ok = s.values[key{name: name, t: t}]
-	return
+	return v, ok
 }
 
 func (s *Scope) getDecoratedValue(name string, t reflect.Type) (v reflect.Value, ok bool) {
 	v, ok = s.decoratedValues[key{name: name, t: t}]
-	return
+	return v, ok
 }
 
 func (s *Scope) setValue(name string, t reflect.Type, v reflect.Value) {
@@ -280,7 +280,7 @@ func (s *Scope) clock() digclock.Clock {
 
 // adds a new graphNode to this Scope and all of its descendent
 // scope.
-func (s *Scope) newGraphNode(wrapped interface{}, orders map[*Scope]int) {
+func (s *Scope) newGraphNode(wrapped any, orders map[*Scope]int) {
 	orders[s] = s.gh.NewNode(wrapped)
 	for _, cs := range s.childScopes {
 		cs.newGraphNode(wrapped, orders)
@@ -311,7 +311,7 @@ func (s *Scope) rootScope() *Scope {
 	return curr
 }
 
-// String representation of the entire Scope
+// String representation of the entire Scope.
 func (s *Scope) String() string {
 	b := &bytes.Buffer{}
 	fmt.Fprintln(b, "nodes: {")

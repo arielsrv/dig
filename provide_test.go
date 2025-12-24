@@ -55,7 +55,6 @@ func TestProvideOptionStrings(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.desc, func(t *testing.T) {
 			t.Parallel()
 
@@ -77,7 +76,7 @@ func TestFillProvideInfoString(t *testing.T) {
 		t.Parallel()
 
 		opt := FillProvideInfo(new(ProvideInfo))
-		assert.NotEqual(t, fmt.Sprint(opt), "FillProvideInfo(0x0)")
+		assert.NotEqual(t, "FillProvideInfo(0x0)", fmt.Sprint(opt))
 		assert.Contains(t, fmt.Sprint(opt), "FillProvideInfo(0x")
 	})
 }
@@ -88,6 +87,6 @@ func TestLocationForPCString(t *testing.T) {
 }
 
 func TestExportString(t *testing.T) {
-	assert.Equal(t, fmt.Sprint(Export(true)), "Export(true)")
-	assert.Equal(t, fmt.Sprint(Export(false)), "Export(false)")
+	assert.Equal(t, "Export(true)", fmt.Sprint(Export(true)))
+	assert.Equal(t, "Export(false)", fmt.Sprint(Export(false)))
 }

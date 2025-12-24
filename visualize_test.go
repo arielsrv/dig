@@ -31,6 +31,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
 	"go.uber.org/dig"
 	"go.uber.org/dig/internal/digtest"
 	"go.uber.org/dig/internal/dot"
@@ -67,10 +68,10 @@ func TestDotGraph(t *testing.T) {
 		strings.Reader
 	}
 
-	type1 := reflect.TypeOf(t1{})
-	type2 := reflect.TypeOf(t2{})
-	type3 := reflect.TypeOf(t3{})
-	type4 := reflect.TypeOf(t4{})
+	type1 := reflect.TypeFor[t1]()
+	type2 := reflect.TypeFor[t2]()
+	type3 := reflect.TypeFor[t3]()
+	type4 := reflect.TypeFor[t4]()
 	type6 := reflect.Indirect(reflect.ValueOf(new(io.Reader))).Type()
 	type7 := reflect.Indirect(reflect.ValueOf(new(io.Writer))).Type()
 
@@ -421,7 +422,7 @@ func TestDotGraph(t *testing.T) {
 
 			A t1 `name:"A" optional:"true"`
 			B t2 `name:"B"`
-			C t3 `optional:"true"`
+			C t3 `         optional:"true"`
 		}
 
 		par1 := tparam(type1, "A", "", true)
@@ -450,7 +451,7 @@ func assertCtorEqual(t *testing.T, expected *dot.Ctor, ctor *dot.Ctor) {
 }
 
 func assertCtorsEqual(t *testing.T, expected []*dot.Ctor, ctors []*dot.Ctor) {
-	require.Equal(t, len(expected), len(ctors))
+	require.Len(t, ctors, len(expected))
 	for i, c := range ctors {
 		assertCtorEqual(t, expected[i], c)
 	}
@@ -569,14 +570,14 @@ func TestVisualize(t *testing.T) {
 			dig.In
 
 			A []t2 `group:"g2"`
-			B t3   `name:"n3"`
+			B t3   `           name:"n3"`
 		}
 
 		type out1 struct {
 			dig.Out
 
 			B t3 `name:"n3"`
-			C t2 `group:"g2"`
+			C t2 `          group:"g2"`
 		}
 
 		type out2 struct {

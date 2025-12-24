@@ -34,20 +34,20 @@ type (
 )
 
 func TestNewGroup(t *testing.T) {
-	type1 := reflect.TypeOf(t1{})
+	type1 := reflect.TypeFor[t1]()
 
 	k := nodeKey{t: type1, group: "group1"}
 	group := NewGroup(k)
 
 	assert.Equal(t, type1, group.Type)
 	assert.Equal(t, "group1", group.Name)
-	assert.Equal(t, "*dot.Group", reflect.TypeOf(group).String())
+	assert.Equal(t, "*dot.Group", reflect.TypeFor[*Group]().String())
 }
 
 func TestAddCtor(t *testing.T) {
-	type1 := reflect.TypeOf(t1{})
-	type2 := reflect.TypeOf(t2{})
-	type3 := reflect.TypeOf([]t3{})
+	type1 := reflect.TypeFor[t1]()
+	type2 := reflect.TypeFor[t2]()
+	type3 := reflect.TypeFor[[]t3]()
 
 	n1 := &Node{Type: type1}
 	n2 := &Node{Type: type2, Name: "bar"}
@@ -87,7 +87,7 @@ func TestAddCtor(t *testing.T) {
 		assert.Equal(t, map[nodeKey]*Group{}, dg.groupMap)
 		dg.AddCtor(c, params, []*Result{})
 
-		assert.Equal(t, 0, len(c.Params))
+		assert.Empty(t, c.Params)
 		assert.Equal(t, []*Group{expectedGroup}, c.GroupParams)
 		assert.Equal(t, map[nodeKey]*Group{k: expectedGroup}, dg.groupMap)
 	})
@@ -128,8 +128,8 @@ func TestAddCtor(t *testing.T) {
 }
 
 func TestFailNodes(t *testing.T) {
-	type1 := reflect.TypeOf(&t1{})
-	type2 := reflect.TypeOf(&t2{})
+	type1 := reflect.TypeFor[*t1]()
+	type2 := reflect.TypeFor[*t2]()
 
 	n1 := &Node{Type: type1}
 	n2 := &Node{Type: type2}
@@ -148,7 +148,7 @@ func TestFailNodes(t *testing.T) {
 
 		dg.AddMissingNodes([]*Result{r1, r2})
 		assert.Equal(t, []*Result{r1, r2}, dg.Failed.RootCauses)
-		assert.Equal(t, 0, len(dg.Failed.TransitiveFailures))
+		assert.Empty(t, dg.Failed.TransitiveFailures)
 
 		dg.AddMissingNodes([]*Result{r3, r4})
 		assert.Equal(t, []*Result{r1, r2}, dg.Failed.RootCauses)
@@ -165,7 +165,7 @@ func TestFailNodes(t *testing.T) {
 
 		dg.FailNodes([]*Result{r1}, 123)
 		assert.Equal(t, []*Result{r1}, dg.Failed.RootCauses)
-		assert.Equal(t, 0, len(dg.Failed.TransitiveFailures))
+		assert.Empty(t, dg.Failed.TransitiveFailures)
 		assert.Equal(t, rootCause, c0.ErrorType)
 
 		dg.FailNodes([]*Result{r2}, 456)
@@ -186,7 +186,7 @@ func TestFailNodes(t *testing.T) {
 
 		dg.FailGroupNodes("foo", type1, 123)
 		assert.Equal(t, []*Result{r3}, dg.Failed.RootCauses)
-		assert.Equal(t, 0, len(dg.Failed.TransitiveFailures))
+		assert.Empty(t, dg.Failed.TransitiveFailures)
 		assert.Equal(t, rootCause, c0.ErrorType)
 		assert.Equal(t, rootCause, dg.groupMap[k0].ErrorType)
 
@@ -199,9 +199,9 @@ func TestFailNodes(t *testing.T) {
 }
 
 func TestPruneSuccess(t *testing.T) {
-	type1 := reflect.TypeOf(&t1{})
-	type2 := reflect.TypeOf(&t2{})
-	type3 := reflect.TypeOf([]t3{})
+	type1 := reflect.TypeFor[*t1]()
+	type2 := reflect.TypeFor[*t2]()
+	type3 := reflect.TypeFor[[]t3]()
 
 	n1 := &Node{Type: type1}
 	n2 := &Node{Type: type2}
@@ -234,8 +234,8 @@ func TestPruneSuccess(t *testing.T) {
 
 		dg.PruneSuccess()
 
-		assert.Len(t, dg.Ctors, 0)
-		assert.Len(t, dg.Groups, 0)
+		assert.Empty(t, dg.Ctors)
+		assert.Empty(t, dg.Groups)
 	})
 
 	t.Run("no constructors should be removed because they all have failing results", func(t *testing.T) {
@@ -330,56 +330,62 @@ func TestPruneSuccess(t *testing.T) {
 		assert.Len(t, c0.Params, 1)
 	})
 
-	t.Run("pruned controller grouped results should be pruned from the consuming controllers and the group", func(t *testing.T) {
-		dg := NewGraph()
-		c0 := &Ctor{ID: 123}
-		c1 := &Ctor{ID: 456}
+	t.Run(
+		"pruned controller grouped results should be pruned from the consuming controllers and the group",
+		func(t *testing.T) {
+			dg := NewGraph()
+			c0 := &Ctor{ID: 123}
+			c1 := &Ctor{ID: 456}
 
-		dg.AddCtor(c0, []*Param{p4}, []*Result{r3})
-		dg.AddCtor(c1, []*Param{}, []*Result{r4})
+			dg.AddCtor(c0, []*Param{p4}, []*Result{r3})
+			dg.AddCtor(c1, []*Param{}, []*Result{r4})
 
-		assert.Equal(t, len(c0.GroupParams), 1)
+			assert.Len(t, c0.GroupParams, 1)
 
-		group, ok := dg.groupMap[nodeKey{t: type2, group: "bar"}]
-		assert.True(t, ok)
+			group, ok := dg.groupMap[nodeKey{t: type2, group: "bar"}]
+			assert.True(t, ok)
 
-		assert.Equal(t, len(group.Results), 1)
+			assert.Len(t, group.Results, 1)
 
-		// r3 is failed to ensure that c0 is not removed.
-		dg.FailNodes([]*Result{r3}, c0.ID)
-		dg.PruneSuccess()
+			// r3 is failed to ensure that c0 is not removed.
+			dg.FailNodes([]*Result{r3}, c0.ID)
+			dg.PruneSuccess()
 
-		assert.Len(t, c0.GroupParams, 0)
-		assert.Len(t, group.Results, 0)
-	})
+			assert.Empty(t, c0.GroupParams)
+			assert.Empty(t, group.Results)
+		},
+	)
 
-	t.Run("grouped params from controllers that are not pruned should not be removed from the consuming controller nor the group", func(t *testing.T) {
-		dg := NewGraph()
-		c0 := &Ctor{ID: 123}
-		c1 := &Ctor{ID: 456}
+	t.Run(
+		"grouped params from controllers that are not pruned should not be removed from the consuming controller nor the group",
+		func(t *testing.T) {
+			dg := NewGraph()
+			c0 := &Ctor{ID: 123}
+			c1 := &Ctor{ID: 456}
 
-		dg.AddCtor(c0, []*Param{p4, p3}, []*Result{r3})
-		dg.AddCtor(c1, []*Param{}, []*Result{r4})
+			dg.AddCtor(c0, []*Param{p4, p3}, []*Result{r3})
+			dg.AddCtor(c1, []*Param{}, []*Result{r4})
 
-		assert.Len(t, c0.GroupParams, 2)
+			assert.Len(t, c0.GroupParams, 2)
 
-		group, ok := dg.groupMap[nodeKey{t: type2, group: "bar"}]
-		assert.True(t, ok)
+			group, ok := dg.groupMap[nodeKey{t: type2, group: "bar"}]
+			assert.True(t, ok)
 
-		assert.Len(t, group.Results, 1)
+			assert.Len(t, group.Results, 1)
 
-		dg.FailNodes([]*Result{r4}, c1.ID)
-		dg.PruneSuccess()
+			dg.FailNodes([]*Result{r4}, c1.ID)
+			dg.PruneSuccess()
 
-		assert.Len(t, c0.GroupParams, 2)
-		assert.Len(t, group.Results, 1)
-	})
+			assert.Len(t, c0.GroupParams, 2)
+			assert.Len(t, group.Results, 1)
+		},
+	)
 }
 
 func TestGetGroup(t *testing.T) {
-	type1 := reflect.TypeOf(t1{})
-	type2 := reflect.TypeOf(t2{})
-	type3 := reflect.TypeOf(t3{})
+	type1 := reflect.TypeFor[t1]()
+	type2 := reflect.TypeFor[t2]()
+	type3 := reflect.TypeFor[t3]()
 
 	r1 := &Result{Node: &Node{Type: type1}}
 
@@ -401,9 +407,9 @@ func TestGetGroup(t *testing.T) {
 }
 
 func TestStringerAndAttribute(t *testing.T) {
-	type1 := reflect.TypeOf(t1{})
-	type2 := reflect.TypeOf(t2{})
-	type3 := reflect.TypeOf(t3{})
+	type1 := reflect.TypeFor[t1]()
+	type2 := reflect.TypeFor[t2]()
+	type3 := reflect.TypeFor[t3]()
 
 	n1 := &Node{Type: type1}
 	n2 := &Node{Type: type2, Name: "bar"}
@@ -416,9 +422,9 @@ func TestStringerAndAttribute(t *testing.T) {
 	r2 := &Result{Node: n2}
 	r3 := &Result{Node: n3, GroupIndex: 5}
 
-	g1 := &Group{Type: reflect.TypeOf(t1{}), Name: "group1"}
-	g2 := &Group{Type: reflect.TypeOf(t2{}), Name: "group2", ErrorType: rootCause}
-	g3 := &Group{Type: reflect.TypeOf(t3{}), Name: "group3", ErrorType: transitiveFailure}
+	g1 := &Group{Type: reflect.TypeFor[t1](), Name: "group1"}
+	g2 := &Group{Type: reflect.TypeFor[t2](), Name: "group2", ErrorType: rootCause}
+	g3 := &Group{Type: reflect.TypeFor[t3](), Name: "group3", ErrorType: transitiveFailure}
 
 	t.Parallel()
 
@@ -445,8 +451,16 @@ func TestStringerAndAttribute(t *testing.T) {
 
 	t.Run("group attributes", func(t *testing.T) {
 		assert.Equal(t, `shape=diamond label=<dot.t1<BR /><FONT POINT-SIZE="10">Group: group1</FONT>>`, g1.Attributes())
-		assert.Equal(t, `shape=diamond label=<dot.t2<BR /><FONT POINT-SIZE="10">Group: group2</FONT>> color=red`, g2.Attributes())
-		assert.Equal(t, `shape=diamond label=<dot.t3<BR /><FONT POINT-SIZE="10">Group: group3</FONT>> color=orange`, g3.Attributes())
+		assert.Equal(
+			t,
+			`shape=diamond label=<dot.t2<BR /><FONT POINT-SIZE="10">Group: group2</FONT>> color=red`,
+			g2.Attributes(),
+		)
+		assert.Equal(
+			t,
+			`shape=diamond label=<dot.t3<BR /><FONT POINT-SIZE="10">Group: group3</FONT>> color=orange`,
+			g3.Attributes(),
+		)
 	})
 }
 

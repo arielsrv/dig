@@ -33,7 +33,7 @@ import (
 func TestNewResultListErrors(t *testing.T) {
 	tests := []struct {
 		desc      string
-		give      interface{}
+		give      any
 		wantError string
 	}{
 		{
@@ -84,7 +84,7 @@ func TestNewResultErrors(t *testing.T) {
 	}
 
 	tests := []struct {
-		give interface{}
+		give any
 		err  string
 	}{
 		{
@@ -116,12 +116,12 @@ func TestNewResultErrors(t *testing.T) {
 }
 
 func TestNewResultObject(t *testing.T) {
-	typeOfReader := reflect.TypeOf((*io.Reader)(nil)).Elem()
-	typeOfWriter := reflect.TypeOf((*io.Writer)(nil)).Elem()
+	typeOfReader := reflect.TypeFor[io.Reader]()
+	typeOfWriter := reflect.TypeFor[io.Writer]()
 
 	tests := []struct {
 		desc string
-		give interface{}
+		give any
 		opts resultOptions
 
 		wantFields []resultObjectField
@@ -154,7 +154,7 @@ func TestNewResultObject(t *testing.T) {
 				Out
 
 				A io.Writer `name:"stream-a"`
-				B io.Writer `name:"stream-b" `
+				B io.Writer `name:"stream-b"`
 			}{},
 			wantFields: []resultObjectField{
 				{
@@ -198,7 +198,7 @@ func TestNewResultObject(t *testing.T) {
 func TestNewResultObjectErrors(t *testing.T) {
 	tests := []struct {
 		desc string
-		give interface{}
+		give any
 		opts resultOptions
 		err  string
 	}{

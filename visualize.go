@@ -155,7 +155,14 @@ func visualizeCtor(w io.Writer, index int, c *dot.Ctor) {
 			optionalStyle = " style=dashed"
 		}
 
-		fmt.Fprintf(w, "\tconstructor_%d -> %s [ltail=cluster_%d%s];\n", index, strconv.Quote(p.String()), index, optionalStyle)
+		fmt.Fprintf(
+			w,
+			"\tconstructor_%d -> %s [ltail=cluster_%d%s];\n",
+			index,
+			strconv.Quote(p.String()),
+			index,
+			optionalStyle,
+		)
 	}
 	for _, p := range c.GroupParams {
 		fmt.Fprintf(w, "\tconstructor_%d -> %s [ltail=cluster_%d];\n", index, strconv.Quote(p.String()), index)

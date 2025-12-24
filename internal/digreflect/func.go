@@ -64,7 +64,7 @@ func (f *Func) Format(w fmt.State, c rune) {
 
 // InspectFunc inspects and returns runtime information about the given
 // function.
-func InspectFunc(function interface{}) *Func {
+func InspectFunc(function any) *Func {
 	fptr := reflect.ValueOf(function).Pointer()
 	return InspectFuncPC(fptr)
 }
@@ -90,7 +90,7 @@ const _vendor = "/vendor/"
 
 func splitFuncName(function string) (pname string, fname string) {
 	if len(function) == 0 {
-		return
+		return pname, fname
 	}
 
 	// We have something like "path.to/my/pkg.MyFunction". If the function is
@@ -121,5 +121,5 @@ func splitFuncName(function string) (pname string, fname string) {
 		pname = unescaped
 	}
 
-	return
+	return pname, fname
 }

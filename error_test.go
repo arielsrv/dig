@@ -31,6 +31,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
 	"go.uber.org/dig/internal/digreflect"
 )
 
@@ -175,8 +176,11 @@ func TestRootCause(t *testing.T) {
 			wantRootCauseAsDigError: true,
 		},
 		{
-			desc:                    "errInvalidInput wrapping errInvalidInput",
-			give:                    errInvalidInput{Message: "foo", Cause: errInvalidInput{Message: "bar", Cause: nil}},
+			desc: "errInvalidInput wrapping errInvalidInput",
+			give: errInvalidInput{
+				Message: "foo",
+				Cause:   errInvalidInput{Message: "bar", Cause: nil},
+			},
 			wantAsDigError:          true,
 			wantRootCause:           errInvalidInput{Message: "bar", Cause: nil},
 			wantRootCauseAsDigError: true,
@@ -201,7 +205,7 @@ func TestRootCause(t *testing.T) {
 			var de Error
 			assert.Equal(t, tt.wantAsDigError, errors.As(tt.give, &de))
 			gotRootCause := RootCause(tt.give)
-			assert.Equal(t, gotRootCause, tt.wantRootCause)
+			assert.Equal(t, tt.wantRootCause, gotRootCause)
 			assert.Equal(t, tt.wantRootCause, gotRootCause, "incorrect root cause")
 			assert.Equal(t, tt.wantRootCauseAsDigError, errors.As(gotRootCause, &de))
 		})
@@ -220,7 +224,7 @@ func TestRootCauseEndToEnd(t *testing.T) {
 	tests := []struct {
 		desc                    string
 		setup                   func(c *Container)
-		invoke                  interface{}
+		invoke                  any
 		wantAsDigError          bool
 		wantRootCauseMessage    string
 		wantRootCauseAsDigError bool
@@ -273,11 +277,11 @@ func TestRootCauseEndToEnd(t *testing.T) {
 		var de Error
 		err := c.Invoke(tt.invoke)
 		assert.Equal(t, tt.wantAsDigError, errors.As(err, &de),
-			fmt.Sprintf("expected errors.As() to return %v", tt.wantAsDigError))
+			"expected errors.As() to return %v", tt.wantAsDigError)
 		rcErr := RootCause(err)
 		assert.Equal(t, tt.wantRootCauseMessage, rcErr.Error())
 		assert.Equal(t, tt.wantRootCauseAsDigError, errors.As(rcErr, &de),
-			fmt.Sprintf("expected errors.As() on the root cause to return %v", tt.wantRootCauseAsDigError))
+			"expected errors.As() on the root cause to return %v", tt.wantRootCauseAsDigError)
 	}
 }
 
@@ -317,7 +321,7 @@ func TestMissingTypeFormatting(t *testing.T) {
 		{
 			desc: "no suggestions",
 			give: missingType{
-				Key: key{t: reflect.TypeOf(type1{})},
+				Key: key{t: reflect.TypeFor[type1]()},
 			},
 			wantV:     "dig.type1",
 			wantPlusV: "dig.type1 (did you mean to Provide it?)",
@@ -325,9 +329,9 @@ func TestMissingTypeFormatting(t *testing.T) {
 		{
 			desc: "one suggestion",
 			give: missingType{
-				Key: key{t: reflect.TypeOf(type1{})},
+				Key: key{t: reflect.TypeFor[type1]()},
 				suggestions: []key{
-					{t: reflect.TypeOf(&type1{})},
+					{t: reflect.TypeFor[*type1]()},
 				},
 			},
 			wantV:     "dig.type1 (did you mean *dig.type1?)",
@@ -336,10 +340,10 @@ func TestMissingTypeFormatting(t *testing.T) {
 		{
 			desc: "many suggestions",
 			give: missingType{
-				Key: key{t: reflect.TypeOf(type1{})},
+				Key: key{t: reflect.TypeFor[type1]()},
 				suggestions: []key{
-					{t: reflect.TypeOf(&type1{})},
-					{t: reflect.TypeOf(new(someInterface)).Elem()},
+					{t: reflect.TypeFor[*type1]()},
+					{t: reflect.TypeFor[someInterface]()},
 				},
 			},
 			wantV:     "dig.type1 (did you mean *dig.type1, or dig.someInterface?)",
@@ -348,9 +352,9 @@ func TestMissingTypeFormatting(t *testing.T) {
 		{
 			desc: "one suggestion for a slice of elements",
 			give: missingType{
-				Key: key{t: reflect.TypeOf([]type1{})},
+				Key: key{t: reflect.TypeFor[[]type1]()},
 				suggestions: []key{
-					{t: reflect.TypeOf([]*type1{})},
+					{t: reflect.TypeFor[[]*type1]()},
 				},
 			},
 			wantV:     "[]dig.type1 (did you mean []*dig.type1?)",
@@ -359,9 +363,9 @@ func TestMissingTypeFormatting(t *testing.T) {
 		{
 			desc: "one suggestion for an array of elements",
 			give: missingType{
-				Key: key{t: reflect.TypeOf([4]type1{})},
+				Key: key{t: reflect.TypeFor[[4]type1]()},
 				suggestions: []key{
-					{t: reflect.TypeOf([4]*type1{})},
+					{t: reflect.TypeFor[[4]*type1]()},
 				},
 			},
 			wantV:     "[4]dig.type1 (did you mean [4]*dig.type1?)",
@@ -370,9 +374,9 @@ func TestMissingTypeFormatting(t *testing.T) {
 		{
 			desc: "one suggestion for a slice of pointers",
 			give: missingType{
-				Key: key{t: reflect.TypeOf([]*type1{})},
+				Key: key{t: reflect.TypeFor[[]*type1]()},
 				suggestions: []key{
-					{t: reflect.TypeOf([]type1{})},
+					{t: reflect.TypeFor[[]type1]()},
 				},
 			},
 			wantV:     "[]*dig.type1 (did you mean []dig.type1?)",
@@ -381,9 +385,9 @@ func TestMissingTypeFormatting(t *testing.T) {
 		{
 			desc: "one suggestion for an array of pointers",
 			give: missingType{
-				Key: key{t: reflect.TypeOf([4]*type1{})},
+				Key: key{t: reflect.TypeFor[[4]*type1]()},
 				suggestions: []key{
-					{t: reflect.TypeOf([4]type1{})},
+					{t: reflect.TypeFor[[4]type1]()},
 				},
 			},
 			wantV:     "[4]*dig.type1 (did you mean [4]dig.type1?)",
@@ -511,7 +515,7 @@ func TestErrorFormatting(t *testing.T) {
 		{
 			desc: "errParamSingleFailed",
 			give: errParamSingleFailed{
-				Key:    key{t: reflect.TypeOf(someType{})},
+				Key:    key{t: reflect.TypeFor[someType]()},
 				Reason: richError,
 			},
 			wantString: `failed to build dig.someType: great sadness`,
@@ -525,7 +529,7 @@ func TestErrorFormatting(t *testing.T) {
 		{
 			desc: "errParamGroupFailed",
 			give: errParamGroupFailed{
-				Key:    key{t: reflect.TypeOf(someType{}), group: "items"},
+				Key:    key{t: reflect.TypeFor[someType](), group: "items"},
 				Reason: richError,
 			},
 			wantString: `could not build value group dig.someType[group="items"]: great sadness`,
@@ -539,7 +543,7 @@ func TestErrorFormatting(t *testing.T) {
 		{
 			desc: "errMissingTypes/single",
 			give: errMissingTypes{
-				{Key: key{t: reflect.TypeOf(someType{})}},
+				{Key: key{t: reflect.TypeFor[someType]()}},
 			},
 			wantString: "missing type: dig.someType",
 			wantPlusV: joinLines(
@@ -550,8 +554,8 @@ func TestErrorFormatting(t *testing.T) {
 		{
 			desc: "errMissingTypes/multiple",
 			give: errMissingTypes{
-				{Key: key{t: reflect.TypeOf(someType{})}},
-				{Key: key{t: reflect.TypeOf(&anotherType{})}},
+				{Key: key{t: reflect.TypeFor[someType]()}},
+				{Key: key{t: reflect.TypeFor[*anotherType]()}},
 			},
 			wantString: "missing types: dig.someType; *dig.anotherType",
 			wantPlusV: joinLines(

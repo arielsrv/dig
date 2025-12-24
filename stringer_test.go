@@ -25,6 +25,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
 	"go.uber.org/dig"
 	"go.uber.org/dig/internal/digtest"
 )
@@ -39,7 +40,7 @@ func TestStringer(t *testing.T) {
 		dig.In
 
 		A A `name:"foo"`
-		B B `optional:"true"`
+		B B `           optional:"true"`
 		C C `name:"bar" optional:"true"`
 
 		Strings []string `group:"baz"`
@@ -91,7 +92,11 @@ func TestStringer(t *testing.T) {
 	assert.Contains(t, s, "dig_test.B -> deps: []")
 	assert.Contains(t, s, "dig_test.C -> deps: []")
 	assert.Contains(t, s, `dig_test.C[name="bar"] -> deps: []`)
-	assert.Contains(t, s, `dig_test.D -> deps: [dig_test.A[name="foo"] dig_test.B[optional] dig_test.C[optional, name="bar"] string[group="baz"]]`)
+	assert.Contains(
+		t,
+		s,
+		`dig_test.D -> deps: [dig_test.A[name="foo"] dig_test.B[optional] dig_test.C[optional, name="bar"] string[group="baz"]]`,
+	)
 	assert.Contains(t, s, `string[group="baz"] -> deps: [dig_test.A]`)
 	assert.Contains(t, s, `string[group="baz"] -> deps: [dig_test.B]`)
 	assert.Contains(t, s, `string[group="baz"] -> deps: [dig_test.C]`)

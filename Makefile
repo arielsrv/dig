@@ -18,7 +18,7 @@ build:
 	go build ./...
 
 .PHONY: lint
-lint: golangci-lint tidy-lint
+lint: go tool golangci-lint run tidy-lint
 
 .PHONY: test
 test:

@@ -75,8 +75,8 @@ func TestDecorateSuccess(t *testing.T) {
 			assert.Equal(t, "A'", a.name, "expected name to equal decorated name.")
 		})
 
-		require.Equal(t, len(info.Inputs), 1)
-		require.Equal(t, len(info.Outputs), 1)
+		require.Len(t, info.Inputs, 1)
+		require.Len(t, info.Outputs, 1)
 		assert.Equal(t, "*dig_test.A", info.Inputs[0].String())
 		assert.Equal(t, "*dig_test.A", info.Outputs[0].String())
 	})
@@ -101,8 +101,8 @@ func TestDecorateSuccess(t *testing.T) {
 			assert.Equal(t, "A'", a.name, "expected name to equal decorated name in child scope")
 		})
 
-		require.Equal(t, len(info.Inputs), 1)
-		require.Equal(t, len(info.Outputs), 1)
+		require.Len(t, info.Inputs, 1)
+		require.Len(t, info.Outputs, 1)
 		assert.Equal(t, "*dig_test.A", info.Inputs[0].String())
 		assert.Equal(t, "*dig_test.A", info.Outputs[0].String())
 	})
@@ -151,18 +151,19 @@ func TestDecorateSuccess(t *testing.T) {
 
 		type A struct {
 			dig.In
+
 			Values []myInt `group:"values"`
 		}
 
 		type B struct {
 			dig.Out
+
 			Values []myInt `group:"values"`
 		}
 
 		c := digtest.New(t)
 
 		for i := range make([]int, 3) {
-			i := i
 			c.RequireProvide(func() *someInt { return newSomeInt(i) }, dig.Group("values"), dig.As(new(myInt)))
 		}
 		c.RequireDecorate(func(in A) B {
@@ -276,7 +277,7 @@ func TestDecorateSuccess(t *testing.T) {
 
 		c.RequireDecorate(func(a *A) *A { return &A{name: a.name + "'"} })
 		assertDecoratedName := func(a *A) {
-			assert.Equal(t, a.name, "A'", "expected name to equal decorated name")
+			assert.Equal(t, "A'", a.name, "expected name to equal decorated name")
 		}
 		c.RequireInvoke(assertDecoratedName)
 		child.RequireInvoke(assertDecoratedName)
@@ -351,8 +352,8 @@ func TestDecorateSuccess(t *testing.T) {
 			assert.Equal(t, "b'", b.B)
 		})
 
-		require.Equal(t, 2, len(info.Inputs))
-		require.Equal(t, 2, len(info.Outputs))
+		require.Len(t, info.Inputs, 2)
+		require.Len(t, info.Outputs, 2)
 		assert.Equal(t, "*dig_test.A", info.Inputs[0].String())
 		assert.Equal(t, `string[name = "b"]`, info.Inputs[1].String())
 	})
@@ -378,7 +379,7 @@ func TestDecorateSuccess(t *testing.T) {
 		var info dig.DecorateInfo
 		c.RequireDecorate(func(p Params) Result {
 			animals := p.Animals
-			for i := 0; i < len(animals); i++ {
+			for i := range animals {
 				animals[i] = "good " + animals[i]
 			}
 			return Result{
@@ -390,7 +391,7 @@ func TestDecorateSuccess(t *testing.T) {
 			assert.ElementsMatch(t, []string{"good dog", "good cat", "good gopher"}, p.Animals)
 		})
 
-		require.Equal(t, 1, len(info.Inputs))
+		require.Len(t, info.Inputs, 1)
 		assert.Equal(t, `[]string[group = "animals"]`, info.Inputs[0].String())
 	})
 
@@ -421,7 +422,7 @@ func TestDecorateSuccess(t *testing.T) {
 		})
 
 		c.RequireInvoke(func(p Param) {
-			assert.Equal(t, 3, len(p.Values))
+			assert.Len(t, p.Values, 3)
 			assert.ElementsMatch(t, []string{"a", "b", "c"}, p.Values)
 			assert.Nil(t, p.A)
 		})
@@ -445,7 +446,7 @@ func TestDecorateSuccess(t *testing.T) {
 		})
 
 		c.RequireInvoke(func(a A) {
-			assert.Equal(t, a.From, "decorator", "value should be from decorator")
+			assert.Equal(t, "decorator", a.From, "value should be from decorator")
 		})
 	})
 
@@ -656,14 +657,17 @@ func TestDecorateFailure(t *testing.T) {
 		t.Parallel()
 		type DecorateIn struct {
 			dig.In
+
 			Values []string `group:"value"`
 		}
 		type DecorateOut struct {
 			dig.Out
+
 			Values []string `group:"decoratedVal"`
 		}
 		type InvokeIn struct {
 			dig.In
+
 			Values []string `group:"decoratedVal"`
 		}
 
@@ -934,7 +938,7 @@ func TestFillDecorateInfoString(t *testing.T) {
 		t.Parallel()
 
 		opt := dig.FillDecorateInfo(new(dig.DecorateInfo))
-		assert.NotEqual(t, fmt.Sprint(opt), "FillDecorateInfo(0x0)")
+		assert.NotEqual(t, "FillDecorateInfo(0x0)", fmt.Sprint(opt))
 		assert.Contains(t, fmt.Sprint(opt), "FillDecorateInfo(0x")
 	})
 }

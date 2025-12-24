@@ -27,6 +27,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
 	"go.uber.org/dig/internal/dot"
 )
 

@@ -47,7 +47,7 @@ func TestParamObjectSuccess(t *testing.T) {
 
 		T1 type1
 		T2 type2 `optional:"true"`
-		T3 type3 `name:"foo"`
+		T3 type3 `                name:"foo"`
 
 		Nested struct {
 			In
@@ -57,7 +57,7 @@ func TestParamObjectSuccess(t *testing.T) {
 		} `name:"bar"`
 	}
 
-	po, err := newParamObject(reflect.TypeOf(in{}), newScope())
+	po, err := newParamObject(reflect.TypeFor[in](), newScope())
 	require.NoError(t, err)
 
 	require.Len(t, po.Fields, 4)
@@ -112,7 +112,7 @@ func TestParamObjectWithUnexportedFieldsSuccess(t *testing.T) {
 
 	_ = in{}.t2 // unused
 
-	po, err := newParamObject(reflect.TypeOf(in{}), newScope())
+	po, err := newParamObject(reflect.TypeFor[in](), newScope())
 	require.NoError(t, err)
 
 	require.Len(t, po.Fields, 1)
@@ -136,7 +136,7 @@ func TestParamObjectFailure(t *testing.T) {
 
 		_ = in{}.a2 // unused but needed
 
-		_, err := newParamObject(reflect.TypeOf(in{}), newScope())
+		_, err := newParamObject(reflect.TypeFor[in](), newScope())
 		require.Error(t, err)
 		assert.Contains(t, err.Error(),
 			`bad field "a2" of dig.in: unexported fields not allowed in dig.In, did you mean to export "a2" (dig.A)`)
@@ -153,7 +153,7 @@ func TestParamObjectFailure(t *testing.T) {
 
 		_ = in{}.a2 // unused but needed
 
-		_, err := newParamObject(reflect.TypeOf(in{}), newScope())
+		_, err := newParamObject(reflect.TypeFor[in](), newScope())
 		require.Error(t, err)
 		assert.Contains(t, err.Error(),
 			`bad field "a2" of dig.in: unexported fields not allowed in dig.In, did you mean to export "a2" (dig.A)`)
@@ -170,17 +170,20 @@ func TestParamObjectFailure(t *testing.T) {
 
 		_ = in{}.a2 // unused but needed
 
-		_, err := newParamObject(reflect.TypeOf(in{}), newScope())
+		_, err := newParamObject(reflect.TypeFor[in](), newScope())
 		require.Error(t, err)
-		assert.Contains(t, err.Error(),
-			`invalid value "foo" for "ignore-unexported" tag on field In: strconv.ParseBool: parsing "foo": invalid syntax`)
+		assert.Contains(
+			t,
+			err.Error(),
+			`invalid value "foo" for "ignore-unexported" tag on field In: strconv.ParseBool: parsing "foo": invalid syntax`,
+		)
 	})
 }
 
 func TestParamGroupSliceErrors(t *testing.T) {
 	tests := []struct {
 		desc    string
-		shape   interface{}
+		shape   any
 		wantErr string
 	}{
 		{

@@ -23,6 +23,7 @@ package dig
 import (
 	"bytes"
 	"fmt"
+	"maps"
 	"reflect"
 	"strings"
 
@@ -40,7 +41,7 @@ type provideOptions struct {
 	Name           string
 	Group          string
 	Info           *ProvideInfo
-	As             []interface{}
+	As             []any
 	Location       *digreflect.Func
 	Exported       bool
 	Callback       Callback
@@ -51,7 +52,13 @@ func (o *provideOptions) Validate() error {
 	if len(o.Group) > 0 {
 		if len(o.Name) > 0 {
 			return newErrInvalidInput(
-				fmt.Sprintf("cannot use named values with value groups: name:%q provided with group:%q", o.Name, o.Group), nil)
+				fmt.Sprintf(
+					"cannot use named values with value groups: name:%q provided with group:%q",
+					o.Name,
+					o.Group,
+				),
+				nil,
+			)
 		}
 	}
 
@@ -259,11 +266,11 @@ func (o fillProvideInfoOption) applyProvideOption(opts *provideOptions) {
 //
 // This option cannot be provided for constructors which produce result
 // objects.
-func As(i ...interface{}) ProvideOption {
+func As(i ...any) ProvideOption {
 	return provideAsOption(i)
 }
 
-type provideAsOption []interface{}
+type provideAsOption []any
 
 func (o provideAsOption) String() string {
 	buf := bytes.NewBufferString("As(")
@@ -286,7 +293,7 @@ func (o provideAsOption) applyProvideOption(opts *provideOptions) {
 // line number of this alternate function address will be used in error messages
 // and DOT graphs. This option is intended to be used with functions created
 // with the reflect.MakeFunc method whose error messages are otherwise hard to
-// understand
+// understand.
 func LocationForPC(pc uintptr) ProvideOption {
 	return provideLocationOption{
 		loc: digreflect.InspectFuncPC(pc),
@@ -380,7 +387,7 @@ type provider interface {
 //
 // Provide accepts argument types or dig.In structs as dependencies, and
 // separate return values or dig.Out structs for results.
-func (c *Container) Provide(constructor interface{}, opts ...ProvideOption) error {
+func (c *Container) Provide(constructor any, opts ...ProvideOption) error {
 	return c.scope.Provide(constructor, opts...)
 }
 
@@ -403,7 +410,7 @@ func (c *Container) Provide(constructor interface{}, opts ...ProvideOption) erro
 // Scopes that are descendents, but not ancestors of this Scope.
 // To provide a constructor to all the Scopes available, provide it to
 // Container, which is the root Scope.
-func (s *Scope) Provide(constructor interface{}, opts ...ProvideOption) error {
+func (s *Scope) Provide(constructor any, opts ...ProvideOption) error {
 	ctype := reflect.TypeOf(constructor)
 	if ctype == nil {
 		return newErrInvalidInput("can't provide an untyped nil", nil)
@@ -437,7 +444,7 @@ func (s *Scope) Provide(constructor interface{}, opts ...ProvideOption) error {
 	return nil
 }
 
-func (s *Scope) provide(ctor interface{}, opts provideOptions) (err error) {
+func (s *Scope) provide(ctor any, opts provideOptions) (err error) {
 	// If Export option is provided to the constructor, this should be injected to the
 	// root-level Scope (Container) to allow it to propagate to all other Scopes.
 	origScope := s
@@ -507,9 +514,7 @@ func (s *Scope) provide(ctor interface{}, opts provideOptions) (err error) {
 			// When a cycle is detected, recover the old providers to reset
 			// the providers map back to what it was before this node was
 			// introduced.
-			for k, ops := range oldProviders {
-				s.providers[k] = ops
-			}
+			maps.Copy(s.providers, oldProviders)
 
 			return newErrInvalidInput("this function introduces a cycle", s.cycleDetectedError(cycle))
 		}
@@ -620,7 +625,6 @@ func (cv connectionVisitor) Visit(res result) resultVisitor {
 	path := strings.Join(cv.currentResultPath, ".")
 
 	switch r := res.(type) {
-
 	case resultSingle:
 		k := key{name: r.Name, t: r.Type}
 
