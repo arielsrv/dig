@@ -30,7 +30,7 @@ import (
 )
 
 func TestParamListBuild(t *testing.T) {
-	p, err := newParamList(reflect.TypeOf(func() io.Writer { return nil }), newScope())
+	p, err := newParamList(reflect.TypeFor[func() io.Writer](), newScope())
 	require.NoError(t, err)
 	assert.Panics(t, func() {
 		p.Build(newScope())

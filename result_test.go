@@ -65,9 +65,7 @@ func TestNewResultListErrors(t *testing.T) {
 }
 
 func TestResultListExtractFails(t *testing.T) {
-	rl, err := newResultList(reflect.TypeOf(func() (io.Writer, error) {
-		panic("function should not be called")
-	}), resultOptions{})
+	rl, err := newResultList(reflect.TypeFor[func() (io.Writer, error)](), resultOptions{})
 	require.NoError(t, err)
 	assert.Panics(t, func() {
 		rl.Extract(newStagingContainerWriter(), false, reflect.ValueOf("irrelevant"))
@@ -390,6 +388,7 @@ func TestWalkResult(t *testing.T) {
 		type type3 struct{}
 		type type4 struct{}
 
+		//nolint:modernize // TypeFor cannot be used with anonymous structs containing local types
 		typ := reflect.TypeOf(struct {
 			Out
 
